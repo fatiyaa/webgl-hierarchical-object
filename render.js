@@ -122,14 +122,14 @@ var lamp = function() {
         var coneRotation = rotateX(180);
 
         // Step 2: Position the cone relative to the top of the upper cube
-        var coneTranslation = mult(translate(-0.6, 0.8, 0.0), rotateZ(90)); // Adjust to align with the top of the upper cube
+        var coneTranslation = mult(translate(-0.65, 0.65, 0.0), rotateZ(90)); // Adjust to align with the top of the upper cube
 
         // Combine transformations: rotate cone and then translate to align with upper cube
         var coneTransform = mult(coneTranslation, coneRotation);
         modelViewMatrix = mult(lookAt(eye, at, up), coneTransform);
 
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.0, 1.0))); // Yellow color for the cone shade
+        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.8, 1.0))); // Yellow color for the cone shade
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsCone);
 
         requestAnimationFrame(() => render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc));
