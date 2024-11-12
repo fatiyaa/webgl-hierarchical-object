@@ -7,6 +7,7 @@ var lamp = function() {
 
     var numPositionsMain = 36;
     var numPositionsUpper = 36;
+    var numPositionsBase = baseCylinderPositionsArray.length;
     var modelViewMatrixLoc, projectionMatrixLoc, colorUniformLoc;
     var modelViewMatrix, projectionMatrix;
     var eye;
@@ -42,7 +43,7 @@ var lamp = function() {
         var program = initShaders(gl, "vertex-shader", "fragment-shader");
         gl.useProgram(program);
 
-        // Build the main and upper cubes
+        // Build the main, upper cubes, and base cylinder
         colorMainCube();
         colorUpperCube();
 
@@ -56,6 +57,11 @@ var lamp = function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferUpper);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(upperCubePositionsArray), gl.STATIC_DRAW);
 
+        // Create and load buffer for the base cylinder
+        var vBufferBase = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBufferBase);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(baseCylinderPositionsArray), gl.STATIC_DRAW);
+
         var positionLoc = gl.getAttribLocation(program, "aPosition");
         gl.enableVertexAttribArray(positionLoc);
 
@@ -63,10 +69,10 @@ var lamp = function() {
         projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
         colorUniformLoc = gl.getUniformLocation(program, "uColor");
 
-        render(vBufferMain, vBufferUpper, positionLoc);
+        render(vBufferMain, vBufferUpper, vBufferBase, positionLoc);
     }
 
-    function render(vBufferMain, vBufferUpper, positionLoc) {
+    function render(vBufferMain, vBufferUpper, vBufferBase, positionLoc) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         eye = vec3(radius * Math.sin(theta) * Math.cos(phi),
@@ -76,6 +82,14 @@ var lamp = function() {
         projectionMatrix = perspective(fovy, aspect, near, far);
         gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
+        // Draw the base cylinder
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBufferBase);
+        gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        modelViewMatrix = mult(lookAt(eye, at, up), translate(0.0, -0.4, 0.0)); // Position below the main cube
+        gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.3, 0.3, 0.3, 1.0))); // Gray color for the base
+        gl.drawArrays(gl.TRIANGLES, 0, numPositionsBase);
+
         // Draw the main cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferMain);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
@@ -84,7 +98,6 @@ var lamp = function() {
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.0, 0.0, 0.0, 1.0))); // Black color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsMain);
 
-        // Draw the upper cube, aligned and pivoted at the top of the main cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferUpper);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
 
@@ -102,7 +115,7 @@ var lamp = function() {
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.5, 0.5, 0.5, 1.0))); // Gray color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsUpper);
 
-        requestAnimationFrame(() => render(vBufferMain, vBufferUpper, positionLoc));
+        requestAnimationFrame(() => render(vBufferMain, vBufferUpper, vBufferBase, positionLoc));
     }
 
     // Initialize the rendering process
