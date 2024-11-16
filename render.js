@@ -104,14 +104,17 @@ var lamp = function () {
         
         const toggleLightButton = document.getElementById("toggleLight");
 
-        // Set initial button label
+        // Set initial button label and color
         toggleLightButton.textContent = isOn ? "Turn Off" : "Turn On";
-
+        toggleLightButton.style.backgroundColor = isOn ? "red" : "green"; // Set initial color
+        
         toggleLightButton.addEventListener("click", () => {
             isOn = !isOn; // Toggle the light state
             toggleLightButton.textContent = isOn ? "Turn Off" : "Turn On"; // Update button label
+            toggleLightButton.style.backgroundColor = isOn ? "red" : "green"; // Update button color
             console.log("Light state:", isOn ? "On" : "Off");
         });
+        
 
         render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, vBufferSphere, iBufferSphere, positionLoc);
     }
