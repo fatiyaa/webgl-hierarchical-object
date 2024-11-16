@@ -27,6 +27,8 @@ var lamp = function () {
     const at = vec3(0.0, 0.0, 0.0);
     const up = vec3(0.0, 1.0, 0.0);
 
+    var isOn = false;
+
     function init() {
         canvas = document.getElementById("gl-canvas");
 
@@ -98,7 +100,18 @@ var lamp = function () {
         colorUniformLoc = gl.getUniformLocation(program, "uColor");
 
         // Attach event listener for keyboard input
-        canvas.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keydown", handleKeyDown);
+        
+        const toggleLightButton = document.getElementById("toggleLight");
+
+        // Set initial button label
+        toggleLightButton.textContent = isOn ? "Turn Off" : "Turn On";
+
+        toggleLightButton.addEventListener("click", () => {
+            isOn = !isOn; // Toggle the light state
+            toggleLightButton.textContent = isOn ? "Turn Off" : "Turn On"; // Update button label
+            console.log("Light state:", isOn ? "On" : "Off");
+        });
 
         render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, vBufferSphere, iBufferSphere, positionLoc);
     }
@@ -166,6 +179,13 @@ var lamp = function () {
         var bulbTransform = mult(lookAt(eye, at, adjustedUp), translate(-0.45, 0.67, 0.0)); // Adjust bulb position inside cone
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(bulbTransform));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(1.0, 1.0, 0.0, 1.0))); // Yellow color for the bulb
+
+        if (isOn) {
+            gl.uniform4fv(colorUniformLoc, flatten(vec4(1.0, 1.0, 0.0, 1.0))); // Yellow (on)
+        } else {
+            gl.uniform4fv(colorUniformLoc, flatten(vec4(0.3, 0.3, 0.3, 1.0))); // Dark gray (off)
+        }
+
         gl.drawElements(gl.TRIANGLES, numSphereIndices, gl.UNSIGNED_SHORT, 0);
 
         // Request the next frame
