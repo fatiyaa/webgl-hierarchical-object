@@ -1,4 +1,3 @@
-// render.js
 "use strict";
 
 var lamp = function() {
@@ -16,11 +15,13 @@ var lamp = function() {
     var near = 0.1;
     var far = 10.0;
     var radius = 2.0;
-    var theta = 0.0;
-    var phi = 0.0;
+    var theta = 0.0; // Horizontal rotation angle
+    var phi = 0.0;   // Vertical rotation angle
     var fovy = 45.0;
     var aspect;
 
+    const cameraSpeed = 0.05;
+    const fovSpeed = 2.0;
     const at = vec3(0.0, 0.0, 0.0);
     const up = vec3(0.0, 1.0, 0.0);
 
@@ -76,64 +77,109 @@ var lamp = function() {
         projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
         colorUniformLoc = gl.getUniformLocation(program, "uColor");
 
+        // Attach event listener for keyboard input
+        window.addEventListener("keydown", handleKeyDown);
+
         render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc);
     }
 
     function render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        eye = vec3(radius * Math.sin(theta) * Math.cos(phi),
-                   radius * Math.sin(theta) * Math.sin(phi),
-                   radius * Math.cos(theta));
-
+    
+        // Hitung posisi kamera berdasarkan radius, theta, dan phi
+        eye = vec3(
+            radius * Math.sin(theta) * Math.cos(phi),
+            radius * Math.sin(phi),
+            radius * Math.cos(theta) * Math.cos(phi)
+        );
+    
+        // Hitung 'up' vector secara dinamis agar kamera tidak mencerminkan
+        const adjustedUp = vec3(0.0, Math.cos(phi) >= 0 ? 1.0 : -1.0, 0.0);
+    
+        // Tetapkan matriks proyeksi
         projectionMatrix = perspective(fovy, aspect, near, far);
         gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-
+    
         // Draw the base cylinder
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferBase);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-        modelViewMatrix = mult(lookAt(eye, at, up), translate(0.0, -0.4, 0.0));
+        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), translate(0.0, -0.4, 0.0));
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.3, 0.3, 0.3, 1.0))); // Gray color for the base
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsBase);
-
+    
         // Draw the main cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferMain);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-        modelViewMatrix = mult(lookAt(eye, at, up), translate(0.0, 0.0, 0.0));
+        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), translate(0.0, 0.0, 0.0));
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.0, 0.0, 0.0, 1.0))); // Black color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsMain);
-
+    
         // Draw the upper cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferUpper);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
         var upperCubeTransform = mult(translate(-0.175, 0.5, 0.0), rotateZ(45));
-        modelViewMatrix = mult(lookAt(eye, at, up), upperCubeTransform);
+        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), upperCubeTransform);
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.5, 0.5, 0.5, 1.0))); // Gray color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsUpper);
-
+    
         // Draw the cone shade hanging down from the top of the upper cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferCone);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-
-        // Step 1: Rotate the cone 180 degrees to point downward
+    
+        // Rotate the cone 180 degrees to point downward
         var coneRotation = rotateX(180);
-
-        // Step 2: Position the cone relative to the top of the upper cube
-        var coneTranslation = mult(translate(-0.65, 0.65, 0.0), rotateZ(90)); // Adjust to align with the top of the upper cube
-
+    
+        // Position the cone relative to the top of the upper cube
+        var coneTranslation = mult(translate(-0.65, 0.65, 0.0), rotateZ(90));
+    
         // Combine transformations: rotate cone and then translate to align with upper cube
         var coneTransform = mult(coneTranslation, coneRotation);
-        modelViewMatrix = mult(lookAt(eye, at, up), coneTransform);
-
+        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), coneTransform);
+    
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.8, 1.0))); // Yellow color for the cone shade
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsCone);
-
+    
+        // Request next frame
         requestAnimationFrame(() => render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc));
     }
+    
+    function handleKeyDown(event) {
+        switch (event.key) {
+            case "w": // Move camera closer
+                radius = Math.max(near + 0.1, radius - cameraSpeed);
+                break;
+            case "s": // Move camera further
+                radius = Math.min(far - 0.1, radius + cameraSpeed);
+                break;
+            case "a": // Rotate camera left
+                theta -= cameraSpeed;
+                if (theta < 0) theta += 2 * Math.PI; // Wrap around for full rotation
+                break;
+            case "d": // Rotate camera right
+                theta += cameraSpeed;
+                if (theta >= 2 * Math.PI) theta -= 2 * Math.PI; // Wrap around for full rotation
+                break;
+            case "q": // Rotate camera up
+                phi += cameraSpeed;
+                if (phi > 2 * Math.PI) phi -= 2 * Math.PI; // Wrap around for full rotation
+                break;
+            case "e": // Rotate camera down
+                phi -= cameraSpeed;
+                if (phi < 0) phi += 2 * Math.PI; // Wrap around for full rotation
+                break;
+            case "z": // Zoom in (decrease FOV)
+                fovy = Math.max(10.0, fovy - fovSpeed);
+                break;
+            case "x": // Zoom out (increase FOV)
+                fovy = Math.min(90.0, fovy + fovSpeed);
+                break;
+        }
+    }
+    
 
     // Initialize the rendering process
     init();
