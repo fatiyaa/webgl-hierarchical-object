@@ -5,7 +5,7 @@ var conePositionsArray = [];
 var coneVertices = [];
 var coneSegments = 30; // Number of segments to approximate the circular base
 
-function createConeVertices(radius = 0.1, height = 0.3) {
+function createConeVertices(radius = 0.15, height = 0.35) {
     // Generate vertices for the base of the cone
     for (let i = 0; i < coneSegments; i++) {
         let angle = (i / coneSegments) * 2 * Math.PI;

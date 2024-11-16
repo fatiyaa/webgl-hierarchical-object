@@ -1,6 +1,6 @@
 "use strict";
 
-var lamp = function() {
+var lamp = function () {
     var canvas;
     var gl;
 
@@ -8,6 +8,8 @@ var lamp = function() {
     var numPositionsUpper = 36;
     var numPositionsBase = baseCylinderPositionsArray.length;
     var numPositionsCone = conePositionsArray.length;
+    var numSphereIndices;
+
     var modelViewMatrixLoc, projectionMatrixLoc, colorUniformLoc;
     var modelViewMatrix, projectionMatrix;
     var eye;
@@ -27,6 +29,10 @@ var lamp = function() {
 
     function init() {
         canvas = document.getElementById("gl-canvas");
+
+        // Ensure canvas captures keyboard events
+        canvas.setAttribute("tabindex", "0");
+        canvas.focus();
 
         var realWidth = canvas.clientWidth;
         var realHeight = canvas.clientHeight;
@@ -70,6 +76,20 @@ var lamp = function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferCone);
         gl.bufferData(gl.ARRAY_BUFFER, flatten(conePositionsArray), gl.STATIC_DRAW);
 
+        // Create and load buffer for the sphere (light bulb)
+        createSphere(0.05, 20, 20); // Radius 0.05
+        console.log("Sphere Positions:", spherePositionsArray);
+        console.log("Sphere Indices:", sphereIndices);
+
+        var vBufferSphere = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(spherePositionsArray), gl.STATIC_DRAW);
+
+        var iBufferSphere = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferSphere);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphereIndices), gl.STATIC_DRAW);
+        numSphereIndices = sphereIndices.length;
+
         var positionLoc = gl.getAttribLocation(program, "aPosition");
         gl.enableVertexAttribArray(positionLoc);
 
@@ -78,28 +98,28 @@ var lamp = function() {
         colorUniformLoc = gl.getUniformLocation(program, "uColor");
 
         // Attach event listener for keyboard input
-        window.addEventListener("keydown", handleKeyDown);
+        canvas.addEventListener("keydown", handleKeyDown);
 
-        render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc);
+        render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, vBufferSphere, iBufferSphere, positionLoc);
     }
 
-    function render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc) {
+    function render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, vBufferSphere, iBufferSphere, positionLoc) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
-        // Hitung posisi kamera berdasarkan radius, theta, dan phi
+
+        // Calculate camera position
         eye = vec3(
             radius * Math.sin(theta) * Math.cos(phi),
             radius * Math.sin(phi),
             radius * Math.cos(theta) * Math.cos(phi)
         );
-    
-        // Hitung 'up' vector secara dinamis agar kamera tidak mencerminkan
+
+        // Dynamic 'up' vector to avoid flipping
         const adjustedUp = vec3(0.0, Math.cos(phi) >= 0 ? 1.0 : -1.0, 0.0);
-    
-        // Tetapkan matriks proyeksi
+
+        // Set up projection matrix
         projectionMatrix = perspective(fovy, aspect, near, far);
         gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
-    
+
         // Draw the base cylinder
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferBase);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
@@ -107,7 +127,7 @@ var lamp = function() {
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.3, 0.3, 0.3, 1.0))); // Gray color for the base
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsBase);
-    
+
         // Draw the main cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferMain);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
@@ -115,7 +135,7 @@ var lamp = function() {
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.0, 0.0, 0.0, 1.0))); // Black color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsMain);
-    
+
         // Draw the upper cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferUpper);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
@@ -124,64 +144,48 @@ var lamp = function() {
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.5, 0.5, 0.5, 1.0))); // Gray color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsUpper);
-    
-        // Draw the cone shade hanging down from the top of the upper cube
+
+        // Draw the cone shade
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferCone);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-    
-        // Rotate the cone 180 degrees to point downward
-        var coneRotation = rotateX(180);
-    
-        // Position the cone relative to the top of the upper cube
-        var coneTranslation = mult(translate(-0.65, 0.65, 0.0), rotateZ(90));
-    
-        // Combine transformations: rotate cone and then translate to align with upper cube
+
+        var coneRotation = rotateX(180); // Rotate cone to point downward
+        var coneTranslation = mult(translate(-0.65, 0.67, 0.0), rotateZ(90)); // Align cone with upper cube
         var coneTransform = mult(coneTranslation, coneRotation);
         modelViewMatrix = mult(lookAt(eye, at, adjustedUp), coneTransform);
-    
+
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.8, 1.0))); // Yellow color for the cone shade
+        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.8, 1.0))); // Light gray color for the cone shade
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsCone);
-    
-        // Request next frame
-        requestAnimationFrame(() => render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, positionLoc));
+
+        // Draw the sphere (light bulb)
+        gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
+        gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferSphere);
+
+        var bulbTransform = mult(lookAt(eye, at, adjustedUp), translate(-0.45, 0.67, 0.0)); // Adjust bulb position inside cone
+        gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(bulbTransform));
+        gl.uniform4fv(colorUniformLoc, flatten(vec4(1.0, 1.0, 0.0, 1.0))); // Yellow color for the bulb
+        gl.drawElements(gl.TRIANGLES, numSphereIndices, gl.UNSIGNED_SHORT, 0);
+
+        // Request the next frame
+        requestAnimationFrame(() => render(vBufferMain, vBufferUpper, vBufferBase, vBufferCone, vBufferSphere, iBufferSphere, positionLoc));
     }
-    
+
     function handleKeyDown(event) {
+        console.log("Key pressed:", event.key); // Debugging
         switch (event.key) {
-            case "w": // Move camera closer
-                radius = Math.max(near + 0.1, radius - cameraSpeed);
-                break;
-            case "s": // Move camera further
-                radius = Math.min(far - 0.1, radius + cameraSpeed);
-                break;
-            case "a": // Rotate camera left
-                theta -= cameraSpeed;
-                if (theta < 0) theta += 2 * Math.PI; // Wrap around for full rotation
-                break;
-            case "d": // Rotate camera right
-                theta += cameraSpeed;
-                if (theta >= 2 * Math.PI) theta -= 2 * Math.PI; // Wrap around for full rotation
-                break;
-            case "q": // Rotate camera up
-                phi += cameraSpeed;
-                if (phi > 2 * Math.PI) phi -= 2 * Math.PI; // Wrap around for full rotation
-                break;
-            case "e": // Rotate camera down
-                phi -= cameraSpeed;
-                if (phi < 0) phi += 2 * Math.PI; // Wrap around for full rotation
-                break;
-            case "z": // Zoom in (decrease FOV)
-                fovy = Math.max(10.0, fovy - fovSpeed);
-                break;
-            case "x": // Zoom out (increase FOV)
-                fovy = Math.min(90.0, fovy + fovSpeed);
-                break;
+            case "q": radius = Math.max(near + 0.1, radius - cameraSpeed); break;
+            case "e": radius = Math.min(far - 0.1, radius + cameraSpeed); break;
+            case "d": theta = (theta - cameraSpeed + 2 * Math.PI) % (2 * Math.PI); break;
+            case "a": theta = (theta + cameraSpeed) % (2 * Math.PI); break;
+            case "s": phi = (phi + cameraSpeed) % (2 * Math.PI); break;
+            case "w": phi = (phi - cameraSpeed + 2 * Math.PI) % (2 * Math.PI); break;
+            case "z": fovy = Math.max(10.0, fovy - fovSpeed); break;
+            case "x": fovy = Math.min(90.0, fovy + fovSpeed); break;
         }
     }
-    
 
-    // Initialize the rendering process
     init();
 };
 
