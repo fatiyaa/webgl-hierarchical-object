@@ -29,6 +29,12 @@ var lamp = function () {
 
     var isOn = false;
 
+    // New joint rotation variables
+    var baseRotation = 0.0; // Rotation at the base
+    var mainArmRotation = 0.0; // Rotation of the main arm
+    var upperArmRotation = 0.0; // Rotation of the upper arm
+    var headRotation = 0.0; // Rotation of the lamp head
+
     function init() {
         canvas = document.getElementById("gl-canvas");
 
@@ -147,7 +153,12 @@ var lamp = function () {
         // Draw the main cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferMain);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), translate(0.0, 0.0, 0.0));
+        // modelViewMatrix = mult(lookAt(eye, at, adjustedUp), translate(0.0, 0.0, 0.0));
+        modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.35, 0.0));
+        // modelViewMatrix = mult(modelViewMatrix, rotateX(mainArmRotation));
+        modelViewMatrix = mult(modelViewMatrix, translate(0.0, -0.35, 0.0)); // Step 1: Translate to origin
+        modelViewMatrix = mult(modelViewMatrix, rotate(mainArmRotation, vec3(0, 0, 1))); // Step 2: Rotate around origin
+        modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.35, 0.0));
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.0, 0.0, 0.0, 1.0))); // Black color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsMain);
@@ -155,8 +166,16 @@ var lamp = function () {
         // Draw the upper cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferUpper);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
-        var upperCubeTransform = mult(translate(-0.175, 0.5, 0.0), rotateZ(45));
-        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), upperCubeTransform);
+        // var upperCubeTransform = mult(translate(-0.175, 0.5, 0.0), rotateZ(45));
+        // modelViewMatrix = mult(lookAt(eye, at, adjustedUp), upperCubeTransform);
+        modelViewMatrix = mult(modelViewMatrix, translate(-0.175, 0.5, 0.0));
+        modelViewMatrix = mult(modelViewMatrix, rotateZ(45));
+        modelViewMatrix = mult(modelViewMatrix, translate(0.0, -0.25, 0.0));
+        
+        // modelViewMatrix = mult(modelViewMatrix, translate(0.175, -0.5, 0.0)); // Step 1: Translate to origin
+        modelViewMatrix = mult(modelViewMatrix, rotate(upperArmRotation, vec3(0, 0, 1))); // Step 2: Rotate around origin
+        // modelViewMatrix = mult(modelViewMatrix, translate(-0.175, 0.5, 0.0));
+        modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.25, 0.0));
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.5, 0.5, 0.5, 1.0))); // Gray color
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsUpper);
@@ -166,9 +185,10 @@ var lamp = function () {
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
 
         var coneRotation = rotateX(180); // Rotate cone to point downward
-        var coneTranslation = mult(translate(-0.65, 0.67, 0.0), rotateZ(90)); // Align cone with upper cube
+        // var coneTranslation = mult(translate(-0.2, 0.0, 0.0), rotateZ(90)); // Align cone with upper cube
+        var coneTranslation = mult(translate(-0.2, 0.3, 0.0), rotateZ(90)); // Align cone with upper cube
         var coneTransform = mult(coneTranslation, coneRotation);
-        modelViewMatrix = mult(lookAt(eye, at, adjustedUp), coneTransform);
+        modelViewMatrix = mult(modelViewMatrix, coneTransform);
 
         gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.8, 1.0))); // Light gray color for the cone shade
@@ -179,8 +199,13 @@ var lamp = function () {
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferSphere);
 
-        var bulbTransform = mult(lookAt(eye, at, adjustedUp), translate(-0.45, 0.67, 0.0)); // Adjust bulb position inside cone
-        gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(bulbTransform));
+        // var bulbTransform = mult(lookAt(eye, at, adjustedUp), translate(-0.45, 0.67, 0.0)); // Adjust bulb position inside cone
+
+        // gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(bulbTransform));
+
+        modelViewMatrix = mult(modelViewMatrix, translate(-0.03, 0.15, 0.0));
+        modelViewMatrix = mult(modelViewMatrix, rotateX(mainArmRotation));
+        gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
         gl.uniform4fv(colorUniformLoc, flatten(vec4(1.0, 1.0, 0.0, 1.0))); // Yellow color for the bulb
 
         if (isOn) {
@@ -198,6 +223,10 @@ var lamp = function () {
     function handleKeyDown(event) {
         console.log("Key pressed:", event.key); // Debugging
         switch (event.key) {
+            case "ArrowUp": mainArmRotation += 5.0; break; // Rotate main arm
+            case "ArrowDown": mainArmRotation -= 5.0; break; // Rotate main arm
+            case "ArrowLeft": upperArmRotation -= 5.0; break; // Rotate upper arm
+            case "ArrowRight": upperArmRotation += 5.0; break; // Rotate upper arm
             case "q": radius = Math.max(near + 0.1, radius - cameraSpeed); break;
             case "e": radius = Math.min(far - 0.1, radius + cameraSpeed); break;
             case "d": theta = (theta - cameraSpeed + 2 * Math.PI) % (2 * Math.PI); break;
