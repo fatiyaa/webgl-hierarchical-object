@@ -238,7 +238,7 @@ var lamp = function () {
             false,
             flatten(modelViewMatrix)
         );
-        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.3, 0.3, 0.3, 1.0)));
+        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.7216, 0.5922, 0.4706, 1.0)));
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsBase);
 
         // Draw the main cube
@@ -280,7 +280,7 @@ var lamp = function () {
             false,
             flatten(modelViewMatrix)
         );
-        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.5, 0.5, 0.5, 1.0)));
+        // gl.uniform4fv(colorUniformLoc, flatten(vec4(0.569, 0.345, 0.0, 1.0)));
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsUpper);
 
         // Draw the cone shade
@@ -308,7 +308,7 @@ var lamp = function () {
             false,
             flatten(modelViewMatrix)
         );
-        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.8, 0.8, 0.8, 1.0)));
+        gl.uniform4fv(colorUniformLoc, flatten(vec4(0.7216, 0.5922, 0.4706, 1.0)));
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsCone);
 
         // Draw the sphere (light bulb)
