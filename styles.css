@@ -47,7 +47,7 @@ button {
 .grid-container {
   display: grid;
   width: 95%; /* Sesuaikan lebar grid dengan lebar kanvas */
-  grid-template-columns: 1fr 1fr 1fr 1fr; /* Membuat 4 kolom */
+  grid-template-columns: 1fr 1fr; /* Membuat 4 kolom */
   gap: 20px; /* Jarak antar kolom */
   margin-top: 20px; /* Jarak antara kanvas dan grid */
 }

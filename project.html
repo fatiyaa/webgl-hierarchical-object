@@ -1,75 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="styles.css" />
-        <title>Lampu Hierarchy</title>
-    </head>
-    <body>
-        <!-- Kanvas WebGL -->
-        <canvas id="gl-canvas"></canvas>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Lampu Hierarchy</title>
+  </head>
+  <body>
+    <!-- Kanvas WebGL -->
+    <canvas id="gl-canvas"></canvas>
 
-        <br />
+    <br />
 
-        <div>
-            <button id="toggleLight">Turn Off</button>
+    <div>
+      <button id="toggleLight">Turn Off</button>
+    </div>
+
+    <div class="grid-container">
+      <!-- Kolom 1: GERAK JATUH BEBAS -->
+      <div class="grid-item controls">
+        <h3 class="center-text">Camera Movement</h3>
+        <div style="margin-left: 200px">
+          <p>Q = Move camera closer</p>
+          <p>E = Move camera further</p>
+          <p>A = Rotate camera right</p>
+          <p>D = Rotate camera left</p>
+          <p>W = Rotate camera down</p>
+          <p>S = Rotate camera up</p>
+          <p>Z = Zoom in (decrease FOV)</p>
+          <p>X = Zoom out (increase FOV)</p>
         </div>
+      </div>
 
-        <!-- Shader for WebGL -->
-        <script id="vertex-shader" type="x-shader/x-vertex">
-            #version 300 es
-            in vec4 aPosition;
-            in vec2 aTexCoord;
+      <!-- Kolom 2: GLBB -->
+      <div class="grid-item controls">
+        <h3 class="center-text">Arm Movement</h3>
+        <div style="margin-left: 180px">
+          <p>↑ = Rotate main arm clockwise</p>
+          <p>↓ = Rotate main arm counterclockwise</p>
+          <p>← = Rotate upper arm clockwise</p>
+          <p>→ = Rotate upper arm counterclockwise</p>
+          <p>U = Rotate head (cone) clockwise</p>
+          <p>J = Rotate head (cone) counterclockwise</p>
+          <p>K = Rotate head (cone) up</p>
+          <p>H = Rotate head (cone) down</p>
+        </div>
+      </div>
+    </div>
 
-            out vec2 vTexCoord;
+<!-- Shader for WebGL -->
+<script id="vertex-shader" type="x-shader/x-vertex">
+    #version 300 es
+    in vec4 aPosition;
+    in vec2 aTexCoord;
 
-            uniform mat4 uModelViewMatrix;
-            uniform mat4 uProjectionMatrix;
+    out vec2 vTexCoord;
 
-            void main() {
-                gl_Position = uProjectionMatrix * uModelViewMatrix * aPosition;
-                vTexCoord = aTexCoord;
-            }
-        </script>
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
 
-        <script id="fragment-shader" type="x-shader/x-fragment">
-            #version 300 es
-            precision mediump float;
+    void main() {
+        gl_Position = uProjectionMatrix * uModelViewMatrix * aPosition;
+        vTexCoord = aTexCoord;
+    }
+</script>
 
-            uniform vec4 uColor; // Warna objek
-            uniform bool uIsLight; // Indikator untuk cahaya
-            uniform bool uUseTexture; 
-            uniform sampler2D uSampler;
+<script id="fragment-shader" type="x-shader/x-fragment">
+    #version 300 es
+    precision mediump float;
 
-            in vec2 vTexCoord; 
+    uniform vec4 uColor; // Warna objek
+    uniform bool uIsLight; // Indikator untuk cahaya
+    uniform bool uUseTexture; 
+    uniform sampler2D uSampler;
 
-            out vec4 fColor;
-            
-            void main() {
-                if (uIsLight) {
-                    // Gradien cahaya
-                    float distance = length(gl_FragCoord.xy / vec2(800.0, 600.0)); // Sesuaikan resolusi
-                    float intensity = 1.0 - distance; // Menurun seiring jarak
-                    fColor = vec4(uColor.rgb * intensity, uColor.a * intensity);
-                } else if (uUseTexture) {
-                    // Mode tekstur
-                    vec4 texColor = texture(uSampler, vTexCoord);
-                    fColor = texColor;
-                } else {
-                    // Mode warna solid
-                    fColor = uColor;
-                }
-            }
-        </script>
+    in vec2 vTexCoord; 
 
-        <script src="initShaders.js"></script>
-        <script src="MVnew.js"></script>
-        <script src="main_cube.js"></script>
-        <script src="upper_cube.js"></script>
-        <script src="base_cylinder.js"></script>
-        <script src="cone.js"></script>
-        <script src="sphere.js"></script>
-        <script src="render.js"></script>
-    </body>
+    out vec4 fColor;
+    
+    void main() {
+        if (uIsLight) {
+            // Gradien cahaya
+            float distance = length(gl_FragCoord.xy / vec2(800.0, 600.0)); // Sesuaikan resolusi
+            float intensity = 1.0 - distance; // Menurun seiring jarak
+            fColor = vec4(uColor.rgb * intensity, uColor.a * intensity);
+        } else if (uUseTexture) {
+            // Mode tekstur
+            vec4 texColor = texture(uSampler, vTexCoord);
+            fColor = texColor;
+        } else {
+            // Mode warna solid
+            fColor = uColor;
+        }
+    }
+</script>
+
+    <script src="initShaders.js"></script>
+    <script src="MVnew.js"></script>
+    <script src="main_cube.js"></script>
+    <script src="upper_cube.js"></script>
+    <script src="base_cylinder.js"></script>
+    <script src="cone.js"></script>
+    <script src="sphere.js"></script>
+    <script src="render.js"></script>
+  </body>
 </html>

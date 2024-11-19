@@ -165,8 +165,15 @@ var lamp = function () {
         var texture = loadTexture(gl, woodTexture);
         gl.uniform1i(gl.getUniformLocation(program, "uTextureMap"), 0);
 
-        // Attach event listener for keyboard input
-        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keydown", function (event) {
+            // Mencegah scroll untuk ArrowUp dan ArrowDown
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+            }
+        
+            // Panggil fungsi handleKeyDown untuk logika lain
+            handleKeyDown(event);
+        });
 
         const toggleLightButton = document.getElementById("toggleLight");
 
