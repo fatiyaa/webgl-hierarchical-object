@@ -163,7 +163,6 @@ var lamp = function () {
 
         // Use the wood texture here
         var texture = loadTexture(gl, woodTexture);
-        gl.uniform1i(gl.getUniformLocation(program, "uTextureMap"), 0);
 
         // Attach event listener for keyboard input
         window.addEventListener("keydown", handleKeyDown);
@@ -280,7 +279,6 @@ var lamp = function () {
             false,
             flatten(modelViewMatrix)
         );
-        // gl.uniform4fv(colorUniformLoc, flatten(vec4(0.569, 0.345, 0.0, 1.0)));
         gl.drawArrays(gl.TRIANGLES, 0, numPositionsUpper);
 
         // Draw the cone shade
@@ -317,7 +315,6 @@ var lamp = function () {
         gl.uniform1i(useTextureLoc, false);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferSphere);
         modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.2, 0.0));
-        // var bulbTransform = modelViewMatrix; // Save transform for glow and light cone
         gl.uniformMatrix4fv(
             modelViewMatrixLoc,
             false,
