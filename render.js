@@ -10,7 +10,7 @@ var lamp = function () {
     var numPositionsCone = conePositionsArray.length;
     var numSphereIndices;
 
-    var modelViewMatrixLoc, projectionMatrixLoc, colorUniformLoc;
+    var modelViewMatrixLoc, projectionMatrixLoc, colorUniformLoc, useTextureLoc;
     var modelViewMatrix, projectionMatrix;
     var eye;
 
@@ -28,11 +28,27 @@ var lamp = function () {
     const up = vec3(0.0, 1.0, 0.0);
 
     var isOn = false;
+    
+    var woodTexture = "wood.jpg"; // Path to the wood texture image
 
     var mainArmRotation = 0.0; // Rotation of the main arm
     var upperArmRotation = 0.0; // Rotation of the upper arm
     var headRotation = 0.0; // Rotation of the lamp head
     var headRightLeft = 0.0; // Rotation of the lamp head
+
+    function loadTexture(gl, url) {
+        var texture = gl.createTexture();
+        var image = new Image();
+        image.onload = function () {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        };
+        image.src = url;
+        return texture;
+    }
 
     function init() {
         canvas = document.getElementById("gl-canvas");
@@ -85,6 +101,13 @@ var lamp = function () {
             gl.STATIC_DRAW
         );
 
+        var tBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, tBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, flatten(texCoordsUpperCubeArray), gl.STATIC_DRAW);
+        
+        // gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+        // gl.enableVertexAttribArray(texCoordLoc);
+
         // Create and load buffer for the base cylinder
         var vBufferBase = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferBase);
@@ -127,6 +150,8 @@ var lamp = function () {
 
         var positionLoc = gl.getAttribLocation(program, "aPosition");
         gl.enableVertexAttribArray(positionLoc);
+        
+        var texCoordLoc = gl.getAttribLocation(program, "aTexCoord");
 
         modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
         projectionMatrixLoc = gl.getUniformLocation(
@@ -134,6 +159,11 @@ var lamp = function () {
             "uProjectionMatrix"
         );
         colorUniformLoc = gl.getUniformLocation(program, "uColor");
+        useTextureLoc = gl.getUniformLocation(program, "uUseTexture");
+
+        // Use the wood texture here
+        var texture = loadTexture(gl, woodTexture);
+        gl.uniform1i(gl.getUniformLocation(program, "uTextureMap"), 0);
 
         // Attach event listener for keyboard input
         window.addEventListener("keydown", handleKeyDown);
@@ -158,7 +188,10 @@ var lamp = function () {
             vBufferCone,
             vBufferSphere,
             iBufferSphere,
-            positionLoc
+            positionLoc,
+            texCoordLoc,
+            useTextureLoc,
+            texture
         );
     }
 
@@ -169,7 +202,10 @@ var lamp = function () {
         vBufferCone,
         vBufferSphere,
         iBufferSphere,
-        positionLoc
+        positionLoc,
+        texCoordLoc,
+        useTextureLoc,
+        texture
     ) {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -192,6 +228,7 @@ var lamp = function () {
         // Draw the base cylinder
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferBase);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        gl.uniform1i(useTextureLoc, false);
         modelViewMatrix = mult(
             lookAt(eye, at, adjustedUp),
             translate(0.0, -0.4, 0.0)
@@ -207,6 +244,7 @@ var lamp = function () {
         // Draw the main cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferMain);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        gl.uniform1i(useTextureLoc, false);
         modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.35, 0.0));
         modelViewMatrix = mult(modelViewMatrix, translate(0.0, -0.35, 0.0));
         modelViewMatrix = mult(
@@ -225,6 +263,10 @@ var lamp = function () {
         // Draw the upper cube
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferUpper);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(texCoordLoc, 2, gl.FLOAT, false, 0, 0);
+        gl.uniform1i(useTextureLoc, true);
+        gl.enableVertexAttribArray(texCoordLoc);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
         modelViewMatrix = mult(modelViewMatrix, translate(-0.175, 0.5, 0.0));
         modelViewMatrix = mult(modelViewMatrix, rotateZ(45));
         modelViewMatrix = mult(modelViewMatrix, translate(0.0, -0.25, 0.0));
@@ -244,6 +286,7 @@ var lamp = function () {
         // Draw the cone shade
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferCone);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        gl.uniform1i(useTextureLoc, false);
         var coneRotation = rotateX(180); // Rotate cone to point downward
         var coneTranslation = mult(translate(-0.25, 0.25, 0.0), rotateZ(90)); // Align cone with upper cube
         var coneTransform = mult(coneTranslation, coneRotation);
@@ -271,6 +314,7 @@ var lamp = function () {
         // Draw the sphere (light bulb)
         gl.bindBuffer(gl.ARRAY_BUFFER, vBufferSphere);
         gl.vertexAttribPointer(positionLoc, 4, gl.FLOAT, false, 0, 0);
+        gl.uniform1i(useTextureLoc, false);
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iBufferSphere);
         modelViewMatrix = mult(modelViewMatrix, translate(0.0, 0.2, 0.0));
         // var bulbTransform = modelViewMatrix; // Save transform for glow and light cone
@@ -345,7 +389,10 @@ var lamp = function () {
                 vBufferCone,
                 vBufferSphere,
                 iBufferSphere,
-                positionLoc
+                positionLoc,
+                texCoordLoc,
+                useTextureLoc,
+                texture
             )
         );
     }

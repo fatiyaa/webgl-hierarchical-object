@@ -2,6 +2,8 @@
 "use strict";
 
 var upperCubePositionsArray = [];
+var texCoordsUpperCubeArray = [];
+
 var upperCubeVertices = [
     vec4(-0.03, -0.25,  0.02, 1.0),  // front-bottom-left
     vec4(-0.03,  0.25,  0.02, 1.0),  // front-top-left
@@ -13,13 +15,31 @@ var upperCubeVertices = [
     vec4( 0.03, -0.25, -0.02, 1.0)   // back-bottom-right
 ];
 
+var texCoord = [
+    vec2(0, 0),
+    vec2(-0.7071, 0.7071),
+    vec2(0, 1.4142),
+    vec2(0.7071, 0.7071)
+];
+
 function quadUpperCube(a, b, c, d) {
     upperCubePositionsArray.push(upperCubeVertices[a]);
+    texCoordsUpperCubeArray.push(texCoord[0]);
+
     upperCubePositionsArray.push(upperCubeVertices[b]);
+    texCoordsUpperCubeArray.push(texCoord[1]);
+
     upperCubePositionsArray.push(upperCubeVertices[c]);
+    texCoordsUpperCubeArray.push(texCoord[2]);
+
     upperCubePositionsArray.push(upperCubeVertices[a]);
+    texCoordsUpperCubeArray.push(texCoord[0]);
+
     upperCubePositionsArray.push(upperCubeVertices[c]);
+    texCoordsUpperCubeArray.push(texCoord[2]);
+
     upperCubePositionsArray.push(upperCubeVertices[d]);
+    texCoordsUpperCubeArray.push(texCoord[3]);
 }
 
 function colorUpperCube() {

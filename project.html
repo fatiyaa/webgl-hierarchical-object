@@ -20,16 +20,16 @@
         <script id="vertex-shader" type="x-shader/x-vertex">
             #version 300 es
             in vec4 aPosition;
-            in vec4 aColor;
-            out vec4 vColor;
+            in vec2 aTexCoord;
+
+            out vec2 vTexCoord;
 
             uniform mat4 uModelViewMatrix;
             uniform mat4 uProjectionMatrix;
 
-            void main()
-            {
+            void main() {
                 gl_Position = uProjectionMatrix * uModelViewMatrix * aPosition;
-                vColor = aColor;
+                vTexCoord = aTexCoord;
             }
         </script>
 
@@ -39,16 +39,26 @@
 
             uniform vec4 uColor; // Warna objek
             uniform bool uIsLight; // Indikator untuk cahaya
-            out vec4 fColor;
+            uniform bool uUseTexture; 
+            uniform sampler2D uSampler;
 
+            in vec2 vTexCoord; 
+
+            out vec4 fColor;
+            
             void main() {
                 if (uIsLight) {
                     // Gradien cahaya
                     float distance = length(gl_FragCoord.xy / vec2(800.0, 600.0)); // Sesuaikan resolusi
                     float intensity = 1.0 - distance; // Menurun seiring jarak
                     fColor = vec4(uColor.rgb * intensity, uColor.a * intensity);
+                } else if (uUseTexture) {
+                    // Mode tekstur
+                    vec4 texColor = texture(uSampler, vTexCoord);
+                    fColor = texColor;
                 } else {
-                    fColor = uColor; // Warna solid untuk objek biasa
+                    // Mode warna solid
+                    fColor = uColor;
                 }
             }
         </script>
