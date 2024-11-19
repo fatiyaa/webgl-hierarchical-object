@@ -164,8 +164,15 @@ var lamp = function () {
         // Use the wood texture here
         var texture = loadTexture(gl, woodTexture);
 
-        // Attach event listener for keyboard input
-        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keydown", function (event) {
+            // Mencegah scroll untuk ArrowUp dan ArrowDown
+            if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+            }
+        
+            // Panggil fungsi handleKeyDown untuk logika lain
+            handleKeyDown(event);
+        });
 
         const toggleLightButton = document.getElementById("toggleLight");
 
